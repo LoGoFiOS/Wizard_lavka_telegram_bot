@@ -13,12 +13,12 @@ from bot.handlers.states import UserStatus
 from bot.utils.ref_generator import get_ref
 
 
-async def show_item(call: types.CallbackQuery, repo: Repo):
-    item_id = call.data.split("_")[1]
-    item = await repo.get_item(int(item_id))
-    await call.bot.send_message(call.from_user.id, await item_msg(item), parse_mode=types.ParseMode.HTML,
-                                reply_markup=await get_item_keyboard(int(item_id), call.from_user.id))
-    await call.answer()
+# async def show_item(call: types.CallbackQuery, repo: Repo):
+#     item_id = call.data.split("_")[1]
+#     item = await repo.get_item(int(item_id))
+#     await call.bot.send_message(call.from_user.id, await item_msg(item), parse_mode=types.ParseMode.HTML,
+#                                 reply_markup=await get_item_keyboard(int(item_id), call.from_user.id))
+#     await call.answer()
 
 
 async def show_shop(m: types.Message):
@@ -55,14 +55,6 @@ async def secret_code(m: types.Message):
     await m.answer("Секретный пароль хозяина лавки: MrKakurasu")
 
 
-async def reading_code(m: types.Message, repo: Repo, state: FSMContext):
-    """
-    Сообщение пользователя (state == waiting_code) - реферальный код. Проверяет валидность.
-    """
-    if await is_code_valid(m, repo, m.text):
-        await add_user(m, m.text, repo, state)
-
-
 async def start_item_id(m: types.Message, repo: Repo):
     """
     Обработка нажатия на кнопку "хочу купить", которая прикреплена к результату выдачи inline запроса.
@@ -80,7 +72,7 @@ async def start_item_id(m: types.Message, repo: Repo):
 
     # Оставить проверку на случай махинаций с диплинками
     if await is_user_exist(m, repo):
-        await m.answer(f"Постойте-ка. Да ведь вы <i>уже</i> наш покупатель!")
+        # await m.answer(f"Постойте-ка. Да ведь вы <i>уже</i> наш покупатель!")
         return
     await UserStatus.waiting_code.set()
     await m.answer(await hi_msg())
@@ -88,14 +80,13 @@ async def start_item_id(m: types.Message, repo: Repo):
 
 async def start_ref_link(m: types.Message, repo: Repo, state: FSMContext):
     """
-    Обработка перехода пользователя по реферальной ссылке вида: https://t.me/UdemyFinal_bot?start=ref_REFCODE
+    Обработка перехода пользователя по реферальной ссылке вида: https://t.me/WizardLavka_bot?start=ref_REFCODE
 
     Из ссылки достаётся вшитый реферальный код ref и проверяется на валидность.
     """
-    # Не нужно, т.к. из-за отсутсвия state в register_message_handler этот хэндлер повторно не пройдёт
-    # if await is_user_exist(m, repo):
-    #     await m.answer(f"Постойте-ка. Да ведь вы <i>уже</i> наш покупатель!")
-    #     return
+    if await is_user_exist(m, repo):
+        await m.answer(f"Постойте-ка. Да ведь вы <i>уже</i> наш покупатель!")
+        return
     ref = m.get_args()[4::]
     await m.answer(f"Вы пришли по реферальной ссылке с паролем: {ref}")
     if await is_code_valid(m, repo, ref):
@@ -104,17 +95,24 @@ async def start_ref_link(m: types.Message, repo: Repo, state: FSMContext):
         await UserStatus.waiting_code.set()
 
 
-async def start_base(m: types.Message):
+async def reading_code(m: types.Message, repo: Repo, state: FSMContext):
+    """
+    Сообщение пользователя (state == waiting_code) - реферальный код. Проверяет валидность.
+    """
+    if await is_code_valid(m, repo, m.text):
+        await add_user(m, m.text, repo, state)
+
+
+async def start_base(m: types.Message, repo: Repo):
     """
     Обработка /start.
 
     Пользователь переводится в состояние waiting_code, т.е. он должен либо ввести реферальный код сам,
     либо пройти по реферальной ссылке.
     """
-    # Не нужно проверять, т.к. из-за отсутсвия state в register_message_handler этот хэндлер повторно не проходит
-    # if await is_user_exist(m, repo):
-    #     await m.answer(f"Постойте-ка. Да ведь вы <i>уже</i> наш покупатель!")
-    #     return
+    if await is_user_exist(m, repo):
+        await m.answer(f"Постойте-ка. Да ведь вы <i>уже</i> наш покупатель!")
+        return
     await UserStatus.waiting_code.set()
     await m.answer(await hi_msg())
 
@@ -122,15 +120,14 @@ async def start_base(m: types.Message):
 # async def adm_set(m: types.Message, repo: Repo, state: FSMContext):
 #     await m.answer("State = accessTrue")
 #     await UserStatus.access_true.set()
+#     await state.update_data({'cart': {}, 'cart_msg_id': None})
 #
 #
 # async def adm_unset(m: types.Message, repo: Repo, state: FSMContext):
 #     await m.answer("State.finish()")
 #     await state.finish()
-#     # await state.update_data({'cart': {}, 'cart_msg_id': None})
-#     # await UserStatus.access_true.set()
-#
-#
+
+
 # async def adm_clear(m: types.Message, repo: Repo, state: FSMContext):
 #     await m.answer("State reset")
 #     await state.finish()
@@ -149,19 +146,19 @@ async def start_base(m: types.Message):
 
 
 def register_user(dp: Dispatcher):
-    dp.register_callback_query_handler(show_item, Text(startswith="item_"), state="*")
-    dp.register_message_handler(show_shop, commands=["shop"], state="*")
-    dp.register_message_handler(user_info, commands=["me"], state=UserStatus.access_true)
-    dp.register_message_handler(secret_code, Text(equals="пожалуйста", ignore_case=True),
-                                state=UserStatus.waiting_code)
-    dp.register_message_handler(reading_code, state=UserStatus.waiting_code)
-    dp.register_message_handler(start_item_id, CommandStart(deep_link=re.compile(r"item_([\w]+)")), state="*")
-    dp.register_message_handler(start_ref_link, CommandStart(deep_link=re.compile(r"ref_([\d]+)")))
-    dp.register_message_handler(start_base, commands=["start"])
     # dp.register_message_handler(adm_set, commands=["set"], state="*")
     # dp.register_message_handler(adm_unset, commands=["unset"], state="*")
     # dp.register_message_handler(adm_clear, commands=["clear"], state="*")
     # dp.register_message_handler(adm_coins, commands=["coins"], state="*")
+    # dp.register_callback_query_handler(show_item, Text(startswith="item_"), state="*")
+    dp.register_message_handler(show_shop, commands=["shop"], state="*")
+    dp.register_message_handler(user_info, commands=["me"], state=UserStatus.access_true)
+    dp.register_message_handler(secret_code, Text(equals="пожалуйста", ignore_case=True),
+                                state=UserStatus.waiting_code)
+    dp.register_message_handler(start_item_id, CommandStart(deep_link=re.compile(r"item_([\w]+)")), state="*")
+    dp.register_message_handler(start_ref_link, CommandStart(deep_link=re.compile(r"ref_([\w]+)")), state="*")
+    dp.register_message_handler(reading_code, state=UserStatus.waiting_code)
+    dp.register_message_handler(start_base, commands=["start"], state="*")
 
 
 async def is_user_exist(m: types.Message, repo: Repo):

@@ -99,11 +99,9 @@ if __name__ == '__main__':
     # import bot.db_docker.sqlite as database
     # db_docker = database.set_config(path_to_db='bot/db_docker/mysqlite.db_docker')
 
-# TODO Оформить бота в Т
 # TODO Репозиторий + описание + сайт
 # TODO Тесты
 # Если активный участник выдаст товар в инлайн моде, то сможет ли его купить неактивный?
-# TODO id Latand
 
 
 # TODO Добавить комментарии в коде

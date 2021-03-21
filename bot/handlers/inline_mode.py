@@ -1,12 +1,10 @@
 from aiogram import Dispatcher, types
-from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 
 from bot.db.repository import Repo
-from bot.handlers.states import UserStatus
 
 
-async def show_all_items_query(query: types.InlineQuery, repo: Repo, state: FSMContext):
+async def show_all_items_query(query: types.InlineQuery, repo: Repo):
     items = await repo.show_all_items()
     articles = [types.InlineQueryResultArticle(
         id=item['id'],
@@ -19,13 +17,13 @@ async def show_all_items_query(query: types.InlineQuery, repo: Repo, state: FSMC
                          f"⬇ Подробнее ⬇",
             parse_mode="HTML",
         ),
-        reply_markup=await get_inline_answer_keyboard(item['id'], state)
+        reply_markup=await get_inline_keyboard(item['id'])
     ) for item in items]
 
     await query.answer(articles, cache_time=2, is_personal=True)
 
 
-async def show_items_query(query: types.InlineQuery, repo: Repo, state: FSMContext):
+async def show_items_query(query: types.InlineQuery, repo: Repo):
     if len(query.query) > 2:
         items = await repo.get_items(query.query)
         articles = [types.InlineQueryResultArticle(
@@ -39,36 +37,37 @@ async def show_items_query(query: types.InlineQuery, repo: Repo, state: FSMConte
                              f"⬇ Подробнее ⬇",
                 parse_mode="HTML",
             ),
-            reply_markup=await get_inline_answer_keyboard(item['id'], state)
+            reply_markup=await get_inline_keyboard(item['id'])
         ) for item in items]
         await query.answer(articles, cache_time=2, is_personal=True)
 
 
 def register_inline_mode(dp: Dispatcher):
-    # dp.register_callback_query_handler(show_item, Text(startswith="item_"), state="*")
     dp.register_inline_handler(show_all_items_query, Text(equals=""), state="*")
     dp.register_inline_handler(show_items_query, state="*")
 
 
-async def get_inline_answer_keyboard(item_id: int, state: FSMContext):
+async def get_inline_keyboard(item_id: int):
     """
     Клавиатура, которая крепится к товару, выдаваемого в inline режиме.
-
-    Первая для тех, кто уже зареган. Вторая с диплинком.
     """
-    if await state.get_state() == UserStatus.access_true.state:
-        return types.InlineKeyboardMarkup(inline_keyboard=[
-            [
-                types.InlineKeyboardButton('Хочу купить!', callback_data=f'item_{item_id}')
-            ],
-        ])
-    else:
-        return types.InlineKeyboardMarkup(inline_keyboard=[
-            [
-                types.InlineKeyboardButton('Хочу купить!',
-                                           url=f"https://t.me/WizardLavka_bot?start=item_{item_id}")
-            ],
-        ])
+    return types.InlineKeyboardMarkup(inline_keyboard=[
+        [
+            types.InlineKeyboardButton('Хочу купить!',
+                                       url=f"https://t.me/WizardLavka_bot?start=item_{item_id}")
+        ],
+    ])
+
+# async def get_inline_keyboard_bot_chat(item_id: int):
+#     """
+#     Клавиатура, которая крепится к товару, выдаваемого в inline режиме. Для запросов В ЧАТЕ С БОТОМ.
+#     """
+#     # if await state.get_state() == UserStatus.access_true.state:
+#     return types.InlineKeyboardMarkup(inline_keyboard=[
+#         [
+#             types.InlineKeyboardButton('Рассмотреть поближе...', callback_data=f'item_{item_id}')
+#         ],
+#     ])
 
 # async def show_item(call: types.CallbackQuery, repo: Repo):
 #     item_id = call.data.split("_")[1]
@@ -84,7 +83,6 @@ async def get_inline_answer_keyboard(item_id: int, state: FSMContext):
 #             [
 #                 types.InlineKeyboardButton('В корзину!', callback_data=f'add_item_{item_id}')
 #             ],
-#             # TODO: реализовать возможность удаления из БД предмета этой кнопкой
 #             [
 #                 types.InlineKeyboardButton('Изъять из каталога!', callback_data=f'del_item_{item_id}')
 #             ],

@@ -18,7 +18,7 @@ async def add_item_to_cart(call: types.CallbackQuery, state: FSMContext):
     user_cart = user_data.get('cart')
     cart_msg_id = user_data.get('cart_msg_id')
     item_amount = user_cart.get(item_id)
-    await call.message.delete()
+    # await call.message.delete()
     if cart_msg_id:
         await call.bot.delete_message(call.message.chat.id, cart_msg_id)
         await state.update_data(cart_msg_id=None)

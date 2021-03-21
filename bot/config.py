@@ -19,5 +19,7 @@ Q_SECRETKEY = str(os.getenv("QIWI_SECRETKEY"))
 Q_PUBKEY = str(os.getenv("QIWI_PUBKEY"))
 
 admins = [
-    23466746
+    23466746,
+    # Latand
+    362089194
 ]
