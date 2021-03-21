@@ -1,0 +1,71 @@
+version: "3"
+
+services:
+  postgres:
+    container_name: tg_postgres
+    image: library/postgres
+    env_file:
+      - ".env"
+    environment:
+      #  Данные для создания пользователя и БД
+      POSTGRES_DB: ${PG_DB}
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+    volumes:
+      # сохраняем данные из БД контейнера на сервере в {DB_DUMP}/udemy_final_pgdata
+      - ${DB_DUMP}/udemy_final_pgdata:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    networks:
+      - botnet
+    restart: always
+
+  redis:
+    container_name: tg_redis
+    image: redis:6.0-alpine
+    env_file:
+      - ".env"
+#    environment:
+#      - REDIS_PASSWORD="mysweetredis"
+    command: redis-server
+    volumes:
+      # сохраняем данные из БД контейнера на сервере в {DB_DUMP}/udemy_final_redis
+      - ${DB_DUMP}/udemy_final_redis:/data
+    ports:
+      - 6379:6379
+    networks:
+      - botnet
+    restart: always
+
+  bot:
+    container_name: tg_bot
+    build:
+      # берём Dockerfile для бота
+      context: .
+    env_file:
+      - ".env"
+    command: python bot.py
+    # Пользоваться только на период разработки. Потом лучше убрать.
+    volumes:
+      - .:/home/bot
+    networks:
+      - botnet
+    restart: always
+    depends_on:
+      - postgres
+      - redis
+
+networks:
+  botnet:
+    driver: bridge
+
+volumes:
+  udemy_final_pgdata:
+  udemy_final_redis:
+
+
+#    hostname: redis
+#    volumes:
+#      - "redis_config:/usr/local/etc/redis"
+#      - "redis_data:/data"
+#    command: "redis-server /usr/local/etc/redis/redis.conf"
