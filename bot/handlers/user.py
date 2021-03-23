@@ -13,12 +13,25 @@ from bot.handlers.states import UserStatus
 from bot.utils.ref_generator import get_ref
 
 
-# async def show_item(call: types.CallbackQuery, repo: Repo):
-#     item_id = call.data.split("_")[1]
-#     item = await repo.get_item(int(item_id))
-#     await call.bot.send_message(call.from_user.id, await item_msg(item), parse_mode=types.ParseMode.HTML,
-#                                 reply_markup=await get_item_keyboard(int(item_id), call.from_user.id))
-#     await call.answer()
+async def show_about(m: types.Message):
+    txt = "Волшебная Лавка Чудесного и Невероятного\n" \
+          "Это финальное задание курса от @Latand.\n" \
+          "https://www.udemy.com/course/aiogram-python/\n\n" \
+          "Исходный код открыт:\n" \
+          "https://github.com/LoGoFiOS/Wizard_lavka_telegram_bot\n\n" \
+          "В репозитории вы сможете найти ТЗ на бота, инструкцию по запуску, а так же доп. информацию, " \
+          "которая может быть полезна.\n" \
+          "Если есть замечания/предложения — пишите @LoGoFiOS"
+    await m.answer(txt)
+
+
+async def set_state(m: types.Message, state: FSMContext):
+    """
+    Возможность перейти в статус ожидания ввода реферального кода. На вскяий случай.
+    """
+    await m.answer("State = waiting_code")
+    await UserStatus.waiting_code.set()
+    await state.update_data({'cart': {}, 'cart_msg_id': None})
 
 
 async def show_shop(m: types.Message):
@@ -97,7 +110,7 @@ async def start_ref_link(m: types.Message, repo: Repo, state: FSMContext):
 
 async def reading_code(m: types.Message, repo: Repo, state: FSMContext):
     """
-    Сообщение пользователя (state == waiting_code) - реферальный код. Проверяет валидность.
+    Сообщение пользователя (state == waiting_code) - реферальный код. Проверяет его валидность.
     """
     if await is_code_valid(m, repo, m.text):
         await add_user(m, m.text, repo, state)
@@ -117,40 +130,9 @@ async def start_base(m: types.Message, repo: Repo):
     await m.answer(await hi_msg())
 
 
-# async def adm_set(m: types.Message, repo: Repo, state: FSMContext):
-#     await m.answer("State = accessTrue")
-#     await UserStatus.access_true.set()
-#     await state.update_data({'cart': {}, 'cart_msg_id': None})
-#
-#
-# async def adm_unset(m: types.Message, repo: Repo, state: FSMContext):
-#     await m.answer("State.finish()")
-#     await state.finish()
-
-
-# async def adm_clear(m: types.Message, repo: Repo, state: FSMContext):
-#     await m.answer("State reset")
-#     await state.finish()
-#     await state.update_data({'cart': {}, 'cart_msg_id': None})
-#     await UserStatus.access_true.set()
-#
-#
-# async def adm_coins(m: types.Message, repo: Repo, state: FSMContext):
-#     await m.answer("add coins")
-#     await repo.change_balance(m.from_user.id, 10)
-
-
-# async def adm_del(m: types.Message, repo: Repo, state: FSMContext):
-#     await m.answer("del user")
-#     await UserStatus.access_true.set()
-
-
 def register_user(dp: Dispatcher):
-    # dp.register_message_handler(adm_set, commands=["set"], state="*")
-    # dp.register_message_handler(adm_unset, commands=["unset"], state="*")
-    # dp.register_message_handler(adm_clear, commands=["clear"], state="*")
-    # dp.register_message_handler(adm_coins, commands=["coins"], state="*")
-    # dp.register_callback_query_handler(show_item, Text(startswith="item_"), state="*")
+    dp.register_message_handler(show_about, commands=["about"], state="*")
+    dp.register_message_handler(set_state, commands=["set"], state="*")
     dp.register_message_handler(show_shop, commands=["shop"], state="*")
     dp.register_message_handler(user_info, commands=["me"], state=UserStatus.access_true)
     dp.register_message_handler(secret_code, Text(equals="пожалуйста", ignore_case=True),
@@ -245,3 +227,43 @@ async def get_item_keyboard(item_id: int, user_id: int):
                 types.InlineKeyboardButton('В корзину!', callback_data=f'add_item_{item_id}')
             ],
         ])
+
+# dp.register_message_handler(adm_unset, commands=["unset"], state="*")
+# dp.register_message_handler(adm_clear, commands=["clear"], state="*")
+# dp.register_message_handler(adm_coins, commands=["coins"], state="*")
+# dp.register_callback_query_handler(show_item, Text(startswith="item_"), state="*")
+
+# async def show_item(call: types.CallbackQuery, repo: Repo):
+#     item_id = call.data.split("_")[1]
+#     item = await repo.get_item(int(item_id))
+#     await call.bot.send_message(call.from_user.id, await item_msg(item), parse_mode=types.ParseMode.HTML,
+#                                 reply_markup=await get_item_keyboard(int(item_id), call.from_user.id))
+#     await call.answer()
+
+
+# async def adm_set(m: types.Message, repo: Repo, state: FSMContext):
+#     await m.answer("State = accessTrue")
+#     await UserStatus.access_true.set()
+#     await state.update_data({'cart': {}, 'cart_msg_id': None})
+#
+#
+# async def adm_unset(m: types.Message, repo: Repo, state: FSMContext):
+#     await m.answer("State.finish()")
+#     await state.finish()
+
+
+# async def adm_clear(m: types.Message, repo: Repo, state: FSMContext):
+#     await m.answer("State reset")
+#     await state.finish()
+#     await state.update_data({'cart': {}, 'cart_msg_id': None})
+#     await UserStatus.access_true.set()
+#
+#
+# async def adm_coins(m: types.Message, repo: Repo, state: FSMContext):
+#     await m.answer("add coins")
+#     await repo.change_balance(m.from_user.id, 10)
+
+
+# async def adm_del(m: types.Message, repo: Repo, state: FSMContext):
+#     await m.answer("del user")
+#     await UserStatus.access_true.set()

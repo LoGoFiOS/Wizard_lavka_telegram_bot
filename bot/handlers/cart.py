@@ -39,6 +39,7 @@ async def show_cart(m: types.Message, repo: Repo, state: FSMContext):
         return
     if cart_msg_id:
         await m.bot.delete_message(m.chat.id, cart_msg_id)
+        await state.update_data(cart_msg_id=None)
     msg = await m.answer(await get_cart_msg(m.from_user.id, repo, state),
                          reply_markup=await get_cart_keyboard(user_cart))
     await state.update_data(cart_msg_id=msg.message_id)

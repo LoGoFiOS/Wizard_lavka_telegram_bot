@@ -12,8 +12,8 @@ services:
       POSTGRES_USER: ${PG_USER}
       POSTGRES_PASSWORD: ${PG_PASSWORD}
     volumes:
-      # сохраняем данные из БД контейнера на сервере в {DB_DUMP}/udemy_final_pgdata
-      - ${DB_DUMP}/udemy_final_pgdata:/var/lib/postgresql/data
+      # сохраняем данные из БД контейнера на сервере в {DB_DUMP}/wizard_lavka_telegram_bot_pgdata
+      - ${DB_DUMP}/wizard_lavka_telegram_bot_pgdata:/var/lib/postgresql/data
     ports:
       - 5432:5432
     networks:
@@ -29,8 +29,8 @@ services:
 #      - REDIS_PASSWORD="mysweetredis"
     command: redis-server
     volumes:
-      # сохраняем данные из БД контейнера на сервере в {DB_DUMP}/udemy_final_redis
-      - ${DB_DUMP}/udemy_final_redis:/data
+      # сохраняем данные из БД контейнера на сервере в {DB_DUMP}/wizard_lavka_telegram_bot_redis
+      - ${DB_DUMP}/wizard_lavka_telegram_bot_redis:/data
     ports:
       - 6379:6379
     networks:
@@ -60,8 +60,8 @@ networks:
     driver: bridge
 
 volumes:
-  udemy_final_pgdata:
-  udemy_final_redis:
+  wizard_lavka_telegram_bot_pgdata:
+  wizard_lavka_telegram_bot_redis:
 
 
 #    hostname: redis
