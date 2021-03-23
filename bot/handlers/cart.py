@@ -108,6 +108,7 @@ async def check_payment(call: types.CallbackQuery, repo: Repo, state: FSMContext
         # UserStatus.access_true.set()
         await repo.update_bill_paid(billid)
         await state.set_state(UserStatus.access_true)
+        await state.update_data({'cart': {}, 'cart_msg_id': None})
         await call.message.delete()
     else:
         await call.message.answer("Счёт не оплачен! Попробуйте ещё раз...")
