@@ -27,7 +27,7 @@ async def show_about(m: types.Message):
 
 async def set_state(m: types.Message, state: FSMContext):
     """
-    Возможность перейти в статус ожидания ввода реферального кода. На вскяий случай.
+    Возможность перейти в статус ожидания ввода реферального кода. На всякий случай.
     """
     await m.answer("State = waiting_code")
     await UserStatus.waiting_code.set()
