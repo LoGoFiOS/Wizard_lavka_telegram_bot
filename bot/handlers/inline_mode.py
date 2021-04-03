@@ -53,50 +53,6 @@ async def get_inline_keyboard(item_id: int):
     """
     return types.InlineKeyboardMarkup(inline_keyboard=[
         [
-            types.InlineKeyboardButton('Хочу купить!',
-                                       url=f"https://t.me/WizardLavka_bot?start=item_{item_id}")
+            types.InlineKeyboardButton('Рассмотреть ближе...', callback_data=f'show_item_{item_id}')
         ],
     ])
-
-# async def get_inline_keyboard_bot_chat(item_id: int):
-#     """
-#     Клавиатура, которая крепится к товару, выдаваемого в inline режиме. Для запросов В ЧАТЕ С БОТОМ.
-#     """
-#     # if await state.get_state() == UserStatus.access_true.state:
-#     return types.InlineKeyboardMarkup(inline_keyboard=[
-#         [
-#             types.InlineKeyboardButton('Рассмотреть поближе...', callback_data=f'item_{item_id}')
-#         ],
-#     ])
-
-# async def show_item(call: types.CallbackQuery, repo: Repo):
-#     item_id = call.data.split("_")[1]
-#     item = await repo.get_item(int(item_id))
-#     await call.bot.send_message(call.from_user.id, await item_msg(item), parse_mode=types.ParseMode.HTML,
-#                                 reply_markup=await get_item_keyboard(int(item_id), call.from_user.id))
-#     await call.answer()
-
-
-# async def get_item_keyboard(item_id: int, user_id: int):
-#     if user_id in config.admins:
-#         return types.InlineKeyboardMarkup(inline_keyboard=[
-#             [
-#                 types.InlineKeyboardButton('В корзину!', callback_data=f'add_item_{item_id}')
-#             ],
-#             [
-#                 types.InlineKeyboardButton('Изъять из каталога!', callback_data=f'del_item_{item_id}')
-#             ],
-#         ])
-#     else:
-#         return types.InlineKeyboardMarkup(inline_keyboard=[
-#             [
-#                 types.InlineKeyboardButton('В корзину!', callback_data=f'add_item_{item_id}')
-#             ],
-#         ])
-
-
-# async def item_msg(item) -> str:
-#     return f"<b>{item['name']}</b>\n\n" \
-#            f"{item['description']}\n\n" \
-#            f"Цена: {item['price']} 💎\n" \
-#            f"{hide_link(item['img_link'])}"

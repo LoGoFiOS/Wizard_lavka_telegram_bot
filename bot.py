@@ -98,12 +98,3 @@ if __name__ == '__main__':
     # Работа с SQlite
     # import bot.db_docker.sqlite as database
     # db_docker = database.set_config(path_to_db='bot/db_docker/mysqlite.db_docker')
-
-# TODO Репозиторий + описание + сайт
-# TODO Тесты
-# Если активный участник выдаст товар в инлайн моде, то сможет ли его купить неактивный?
-
-
-# TODO Добавить комментарии в коде
-# TODO aiohttp
-# TODO delete for adm

@@ -1,5 +1,5 @@
 from datetime import datetime
-
+import logging
 from aiogram import Dispatcher, types
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
@@ -9,7 +9,23 @@ from bot.db.repository import Repo
 from bot.handlers.states import UserStatus
 from bot.utils import qiwi
 
+from aiogram.utils.markdown import hide_link
+from aiogram.utils.exceptions import Unauthorized
+
+from bot import config
+
 cb_items = CallbackData("items", "id", "action")
+
+
+async def show_item(call: types.CallbackQuery, repo: Repo):
+    item_id = call.data.split("_")[2]
+    item = await repo.get_item(int(item_id))
+    try:
+        await call.bot.send_message(call.from_user.id, await item_msg(item), parse_mode=types.ParseMode.HTML,
+                                    reply_markup=await get_item_keyboard(int(item_id), call.from_user.id))
+    except Unauthorized as e:
+        logging.warning(f"{type(e)}")
+    await call.answer()
 
 
 async def add_item_to_cart(call: types.CallbackQuery, state: FSMContext):
@@ -18,7 +34,6 @@ async def add_item_to_cart(call: types.CallbackQuery, state: FSMContext):
     user_cart = user_data.get('cart')
     cart_msg_id = user_data.get('cart_msg_id')
     item_amount = user_cart.get(item_id)
-    # await call.message.delete()
     if cart_msg_id:
         await call.bot.delete_message(call.message.chat.id, cart_msg_id)
         await state.update_data(cart_msg_id=None)
@@ -46,13 +61,11 @@ async def show_cart(m: types.Message, repo: Repo, state: FSMContext):
 
 
 async def cart_clear(call: types.CallbackQuery, state: FSMContext):
-    user_data = await state.get_data()
-    user_cart = user_data.get('cart').clear()
     await state.update_data(cart=dict())
-    cart_msg_id = user_data.get('cart_msg_id')
+    cart_msg_id = call.message.message_id
     await call.bot.edit_message_text(text=f"Корзина очищена!", chat_id=call.message.chat.id,
                                      message_id=cart_msg_id,
-                                     reply_markup=await get_cart_keyboard(user_cart))
+                                     reply_markup=None)
     await call.answer()
 
 
@@ -65,7 +78,7 @@ async def cart_buy(call: types.CallbackQuery):
 
 
 async def cart_cancel(call: types.CallbackQuery):
-    # можно не удалять, всё равно перезапишутя в get_cart_msg() и add_address()
+    # можно не удалять, всё равно перезапишутся в get_cart_msg() и add_address()
     # del user_data['must_pay']
     # del user_data['balance']
     # del user_data['address']
@@ -82,7 +95,7 @@ async def add_address(m: types.Message, repo: Repo, state: FSMContext):
     await state.update_data(address=m.text)
     await UserStatus.waiting_payment.set()
 
-    # формирование укникального номера выставляемого счёта и занесение его в БД
+    # формирование уникального номера выставляемого счёта и занесение его в БД
     now = datetime.now()
     dt_string = now.strftime("%d_%m_%Y_%H_%M_%S")
     billid = f"{m.from_user.id}_{dt_string}"
@@ -146,6 +159,7 @@ async def cart_item_minus(call: types.CallbackQuery, callback_data: dict, repo: 
 
 
 def register_cart(dp: Dispatcher):
+    dp.register_callback_query_handler(show_item, Text(startswith="show_item_"), state=UserStatus.access_true)
     dp.register_callback_query_handler(add_item_to_cart, Text(startswith="add_item_"), state=UserStatus.access_true)
     dp.register_message_handler(show_cart, commands=["cart"], state=UserStatus.access_true)
     dp.register_callback_query_handler(cart_clear, Text(equals="cart_clear"), state="*")
@@ -155,6 +169,38 @@ def register_cart(dp: Dispatcher):
     dp.register_callback_query_handler(check_payment, Text(equals="pay_check"), state="*")
     dp.register_callback_query_handler(cart_item_plus, cb_items.filter(action="cart_plus"), state="*")
     dp.register_callback_query_handler(cart_item_minus, cb_items.filter(action="cart_minus"), state="*")
+
+
+async def item_msg(item) -> str:
+    """
+    Формат вывода информации о товаре.
+    """
+    return f"<b>{item['name']}</b>\n\n" \
+           f"{item['description']}\n\n" \
+           f"Цена: {item['price']} 💎\n" \
+           f"{hide_link(item['img_link'])}"
+
+
+async def get_item_keyboard(item_id: int, user_id: int):
+    """
+    Клавиатура, которая крепится к сообщению с информацией о товаре.
+    """
+    if user_id in config.admins:
+        return types.InlineKeyboardMarkup(inline_keyboard=[
+            [
+                types.InlineKeyboardButton('В корзину!', callback_data=f'add_item_{item_id}')
+            ],
+            # TODO: реализовать возможность удаления из БД предмета этой кнопкой
+            [
+                types.InlineKeyboardButton('Изъять из каталога!', callback_data=f'del_item_{item_id}')
+            ],
+        ])
+    else:
+        return types.InlineKeyboardMarkup(inline_keyboard=[
+            [
+                types.InlineKeyboardButton('В корзину!', callback_data=f'add_item_{item_id}')
+            ],
+        ])
 
 
 async def get_cart_keyboard(user_cart: dict):
