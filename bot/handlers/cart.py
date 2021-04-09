@@ -10,7 +10,7 @@ from bot.handlers.states import UserStatus
 from bot.utils import qiwi
 
 from aiogram.utils.markdown import hide_link
-from aiogram.utils.exceptions import Unauthorized
+from aiogram.utils.exceptions import Unauthorized, MessageCantBeDeleted
 
 from bot import config
 
@@ -35,8 +35,15 @@ async def add_item_to_cart(call: types.CallbackQuery, state: FSMContext):
     cart_msg_id = user_data.get('cart_msg_id')
     item_amount = user_cart.get(item_id)
     if cart_msg_id:
-        await call.bot.delete_message(call.message.chat.id, cart_msg_id)
-        await state.update_data(cart_msg_id=None)
+
+        # добавил из-за возникающей ошибки в связи с тем, что время на удаление сообщения конечно.
+        try:
+            await call.bot.delete_message(call.message.chat.id, cart_msg_id)
+        except MessageCantBeDeleted as e:
+            logging.warning(f"{type(e)}")
+        finally:
+            await state.update_data(cart_msg_id=None)
+
     if item_amount:
         user_cart[item_id] += 1
     else:
@@ -53,8 +60,15 @@ async def show_cart(m: types.Message, repo: Repo, state: FSMContext):
     if not user_cart:
         return
     if cart_msg_id:
-        await m.bot.delete_message(m.chat.id, cart_msg_id)
-        await state.update_data(cart_msg_id=None)
+
+        # добавил из-за возникающей ошибки в связи с тем, что время на удаление сообщения конечно.
+        try:
+            await m.bot.delete_message(m.chat.id, cart_msg_id)
+        except MessageCantBeDeleted as e:
+            logging.warning(f"{type(e)}")
+        finally:
+            await state.update_data(cart_msg_id=None)
+
     msg = await m.answer(await get_cart_msg(m.from_user.id, repo, state),
                          reply_markup=await get_cart_keyboard(user_cart))
     await state.update_data(cart_msg_id=msg.message_id)

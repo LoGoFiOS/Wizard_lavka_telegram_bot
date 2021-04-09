@@ -35,13 +35,10 @@ async def set_state(m: types.Message, state: FSMContext):
 async def show_shop(m: types.Message):
     """
     Выдаёт сообщение, в котором кнопка, открывающая каталог.
-    Сообщение удалится через 3 сек.
     """
     keyboard = types.InlineKeyboardMarkup()
     keyboard.add(types.InlineKeyboardButton(text='Каталог', switch_inline_query_current_chat=""))
     msg = await m.answer("Нажми, чтобы посмотреть:", reply_markup=keyboard)
-    await asyncio.sleep(3.0)
-    await msg.delete()
 
 
 async def user_info(m: types.Message, repo: Repo):
